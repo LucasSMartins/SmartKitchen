@@ -1,1 +1,0 @@
-Esta é uma palavra [0;31mcolorida[0m
