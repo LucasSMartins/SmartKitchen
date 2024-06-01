@@ -8,12 +8,13 @@ class MinhaCollectuionRepository:
         self.__collection_name = collection
         self.__db_connection = db_connection
 
-    def find_document(self, filter_document: Dict, request_attribute: Dict = None) -> List:
+    def find_document(self, filter_document: Dict, request_attribute: Dict) -> List:
         collection = self.__db_connection.get_collection(
             self.__collection_name)
         cursor = collection.find(filter_document, request_attribute)
-        data = [i for i in cursor]
-        return data
+        # data = [ i for i in cursor]
+        # return data
+        return cursor
 
     def insert_document(self, document: Dict) -> None:
         collection = self.__db_connection.get_collection(
