@@ -1,31 +1,25 @@
-from models.repository.collections import MinhaCollectuionRepository
+from models.repository.collections import CollectionHandler
 from models.connection_options.connections import DBConnectionHandler
 from fastapi import APIRouter
-from models.connection_options.connectiionCollection import minha_collection_repository
+from typing import Dict
 
 
 router = APIRouter()
 
 
-db_name = 'smartkitchen'
+db_name = 'smartkitchien'
 collection = 'users'
 
 db_handler = DBConnectionHandler()
 db_handler.connect_to_db(db_name)
 db_connection = db_handler.get_db_connection()
 
-minha_collection_repository = MinhaCollectuionRepository(
+collection_repository = CollectionHandler(
     db_connection, collection)
 
 
 @router.get("/")
-async def read_users():
-    async_cursor = minha_collection_repository.find_document({}, {"_id": 0})
-
-    # Iterar sobre o cursor para obter os documentos
-    async for document in async_cursor:
-        print(document)
-
-    # Fechar a conexão
-    await db_connection.close()
-    return {"msg": 'ok'}
+async def read_users() -> list[Dict]:
+    async_cursor = collection_repository.find_document({}, {"_id": 0})
+    data_list = [doc async for doc in async_cursor]
+    return data_list
