@@ -1,23 +1,35 @@
 from fastapi import APIRouter, HTTPException
-from models.connection_options.connectiionCollection import minha_collection_repository
-from bson.objectid import ObjectId
+from models.connection_options.connections import DBConnectionHandler
+from models.repository.collections import CollectionHandler
+# from bson.objectid import ObjectId
 from typing import Dict, List
 
 
 router = APIRouter()
 
 
+db_name = 'smartkitchien'
+collection = 'recipes'
+
+db_handler = DBConnectionHandler()
+db_handler.connect_to_db(db_name)
+db_connection = db_handler.get_db_connection()
+
+collection_repository = CollectionHandler(
+    db_connection, collection)
+
+
 @router.get('/')
 async def recipes(id: str) -> List[Dict]:
-    data = minha_collection_repository.find_document(
-        {}, {"_id": 0}) if not id else minha_collection_repository.find_document({"_id": ObjectId(id)}, {"_id": 0})
+    data = collection_repository.find_document(
+        {}, {"_id": 0}) if not id else collection_repository.find_document({"_id": ObjectId(id)}, {"_id": 0})
     return data
 
 
 @router.post('/')
 async def create_recipe(data: Dict) -> Dict:
     try:
-        minha_collection_repository.insert_document(data)
+        collection_repository.insert_document(data)
         return {"result": 'success'}
     except:
         raise HTTPException(status_code=400, detail="Erro nos tipo de dados")
@@ -26,7 +38,7 @@ async def create_recipe(data: Dict) -> Dict:
 @router.put("/{id}")
 def update_recipe(id: str, data: Dict) -> str:
     try:
-        minha_collection_repository.update_document(id, data)
+        collection_repository.update_document(id, data)
         return 'success'
     except:
         return 'error'
@@ -34,5 +46,5 @@ def update_recipe(id: str, data: Dict) -> str:
 
 @router.delete("/{id}")
 def delete_recipe(id: str) -> str:
-    minha_collection_repository.delete_document(id)
+    collection_repository.delete_document(id)
     return 'success'
