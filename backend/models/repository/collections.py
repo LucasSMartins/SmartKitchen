@@ -34,10 +34,11 @@ class CollectionHandler:
     #         self.__collection_name)
     #     collection.update_one({"_id": ObjectId(id)}, {"$set": attr})
 
-    # def delete_document(self, id: str) -> None:
-    #     collection = self.__db_connection.get_collection(
-    #         self.__collection_name)
-    #     collection.delete_one({"_id": ObjectId(id)})
+    def delete_document(self, id: Dict):
+        collection = self.__db_connection.get_collection(
+            self.__collection_name)
+        collection.delete_one(id)
+        return collection.deleted_count
 
     # def delete_many_document(self, id: List) -> None:
     #     object_ids = [ObjectId(i) for i in id]

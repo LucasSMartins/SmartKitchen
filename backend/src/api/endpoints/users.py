@@ -74,10 +74,24 @@ async def create_user(new_user: UserIn):
     ]
     response = {
         "status": "success",
-        "message": "User created successfully",
+        "message": "User created",
         "data": new_dict
     }
     return response
 
 
-# use o status 204 delete
+@router.delete('/{id}',
+               response_model=Default_Answer,
+               status_code=status.HTTP_200_OK
+               )
+async def del_user(id: str):
+
+    collection_repository.delete_document({'_id': ObjectId(id)})
+
+    response = {
+        "status": "success",
+        "message": "User deleted",
+        "data": None
+    }
+
+    return response

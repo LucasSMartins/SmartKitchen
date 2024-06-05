@@ -8,4 +8,4 @@ from src.api.schema.users import UserOut
 class Default_Answer(BaseModel):
     status: str
     message: str
-    data: list[UserOut]
+    data: list[UserOut] | None
