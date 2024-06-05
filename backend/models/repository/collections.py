@@ -1,6 +1,4 @@
-from typing import Dict, List
-# from bson.objectid import ObjectId
-# from models.connection_options.mongo_db_config import mongo_db_infos
+from typing import Dict
 
 
 class CollectionHandler:
@@ -8,16 +6,23 @@ class CollectionHandler:
         self.__collection_name = collection
         self.__db_connection = db_connection
 
-    def find_document(self, filter_document: Dict, request_attribute: Dict):
+    async def find_document(self, filter_document: Dict = {}, request_attribute: Dict = {}):
         collection = self.__db_connection.get_collection(
             self.__collection_name)
         async_cursor = collection.find(filter_document, request_attribute)
-        return async_cursor
+        data = await async_cursor.to_list(length=None)
+        return data
 
-    # def insert_document(self, document: Dict) -> None:
-    #     collection = self.__db_connection.get_collection(
-    #         self.__collection_name)
-    #     collection.insert_one(document)
+    async def find_document_one(self, filter_document: Dict = {}, request_attribute: Dict = {}):
+        collection = self.__db_connection.get_collection(
+            self.__collection_name)
+        data = [await collection.find_one(filter_document, request_attribute)]
+        return data
+
+    async def insert_document(self, document: Dict) -> None:
+        collection = self.__db_connection.get_collection(
+            self.__collection_name)
+        collection.insert_one(document)
 
     # def insert_many_document(self, listDocument: List[Dict]) -> None:
     #     collection = self.__db_connection.get_collection(
