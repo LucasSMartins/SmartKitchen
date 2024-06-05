@@ -1,11 +1,12 @@
-from models.repository.collections import CollectionHandler
+from typing import Annotated
+
+from bson.objectid import ObjectId
+from fastapi import APIRouter, HTTPException, Path, status
+
 from models.connection_options.connections import DBConnectionHandler
-from fastapi import APIRouter, Form, HTTPException, Path, Query, status
-from typing import Annotated, Dict, Optional
+from models.repository.collections import CollectionHandler
 from src.api.schema.default_answer import Attr_Default_Answer, Default_Answer
 from src.api.schema.users import UserOut, UserIn
-from bson.objectid import ObjectId
-
 
 router = APIRouter()
 
@@ -101,9 +102,9 @@ async def create_user(new_user: UserIn):
 
 
 @router.delete('/{id}', response_model=Default_Answer, status_code=status.HTTP_200_OK)
-async def del_user(id: str):
+async def del_user(user_id: str):
 
-    filter_document = {'_id': ObjectId(id)}
+    filter_document = {'_id': ObjectId(user_id)}
     request_attribute = {'_id': 0, 'password': 0}
 
     does_the_user_exist = await collection_repository.find_document(filter_document, request_attribute)
@@ -114,6 +115,6 @@ async def del_user(id: str):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT,
                             detail=response)
 
-    collection_repository.delete_document({'_id': ObjectId(id)})
+    collection_repository.delete_document({'_id': ObjectId(user_id)})
 
     return Default_Answer(detail=Attr_Default_Answer(status='success', msg='User deleted'))
