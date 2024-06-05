@@ -5,7 +5,13 @@ from pydantic.dataclasses import dataclass
 from src.api.schema.users import UserOut
 
 
-class Default_Answer(BaseModel):
+class Attr_Default_Answer(BaseModel):
     status: str
-    message: str
-    data: list[UserOut] | None
+    msg: str
+    data: list[UserOut | Dict] | None = None
+    loc: list[str | int] | None = None
+    type: str | None = None
+
+
+class Default_Answer(BaseModel):
+    detail: Attr_Default_Answer

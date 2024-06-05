@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.api.router import api_router
 
 app = FastAPI(
-    title='smartkitchien',
+    title='smartkitchen',
     version='0.1.0',
     description='APP perfeito para salva as suas receitas favoritas.'
 )
