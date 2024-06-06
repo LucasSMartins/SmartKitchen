@@ -27,7 +27,7 @@ Como um iniciante no mundo da programação, estou embarcando nesta jornada para
 - **Banco de Dados:** MongoDB
 - **Frontend:** Next.js
 - **UI Framework:** Tailwind CSS
-- **Ferramentas de IA:** Bibliotecas de Python para processamento de linguagem natural (NLP) e algoritmos de recomendação (se aplicável)
+- **Ferramentas de IA:** ??
 
 ## Progresso Atual
 
