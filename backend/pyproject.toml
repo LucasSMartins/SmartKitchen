@@ -1,0 +1,42 @@
+[tool.black]
+# Linha máxima
+line-length = 98
+
+# Quebra antes de operadores binários
+multi-line-output = 3
+
+# Quebra antes de operadores de nível superior
+include-trailing-comma = true
+
+# Como lidar com listas, dicionários e tuplas
+experimental-string-processing = false
+
+# Ignorar arquivos ou diretórios específicos
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+# Ignorar linhas ou arquivos específicos
+skip-string-normalization = false
+
+# Se True, o Black sempre usará aspas simples para strings, a menos que a string contenha aspas simples e nenhum apóstrofo
+prefer-single-quotes = true
+
+# Para quebras de linha antes de operadores binários, podemos especificar o número máximo de itens em uma lista, dicionário ou tupla
+inline-quotes = "double"
+
+# Enforce or not that the generated files have a trailing newline
+include-trailing-newline = true
+
+# Se True, inclua um espaço após a vírgula em listas, tuplas e dicionários
+extend-ignore = "E203, W503"

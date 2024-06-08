@@ -3,5 +3,5 @@ mongo_db_infos = {
     "PASSWORD": "kl2717",
     "CLUSTER": "SmartKitchenCluster0",
     "DB_NAME": "smartkitchien",
-    "COLLECTION": "users"
+    "COLLECTION": "users",
 }
