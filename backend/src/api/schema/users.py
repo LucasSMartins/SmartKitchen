@@ -1,8 +1,6 @@
 import re
-from typing import Optional
-from pydantic import BaseModel, EmailStr, Field, constr, field_validator
-from datetime import datetime
-from pydantic.dataclasses import dataclass
+
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
 class UserIn(BaseModel):
@@ -33,3 +31,11 @@ class UserIn(BaseModel):
 class UserOut(BaseModel):
     username: str
     email: EmailStr
+
+
+class UserInUpdate(UserIn):
+    username: str | None = None
+    email: EmailStr | None = None
+    password: str | None = None
+
+
