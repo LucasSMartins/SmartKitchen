@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Dict
 
 from bson.objectid import ObjectId
 from fastapi import APIRouter, HTTPException, Path, status
@@ -11,7 +11,6 @@ from src.api.schema.users import UserOut, UserIn
 
 router = APIRouter()
 
-
 db_name = "smartkitchien"
 collection = "users"
 
@@ -19,16 +18,16 @@ db_handler = DBConnectionHandler()
 db_handler.connect_to_db(db_name)
 db_connection = db_handler.get_db_connection()
 
-
 collection_repository = CollectionHandler(db_connection, collection)
 
 
 @router.get("/", response_model=Default_Answer)
 async def read_users():
-
     request_attribute = {"_id": 0, "password": 0}
 
-    data = await collection_repository.find_document(request_attribute=request_attribute)
+    data = await collection_repository.find_document(
+        request_attribute=request_attribute
+    )
 
     if not data or not data[0]:
         response = Default_Answer(
@@ -47,16 +46,18 @@ async def read_user(
         str,
         Path(
             title="The ID of the item to get",
-            description="The unique identifier for the item, represented as a MongoDB ObjectId",
+            description="The unique identifier for the item, represented as a MongoDB "
+            "ObjectId",
             regex=r"^[a-fA-F0-9]{24}$",
         ),
     ]
 ):
-
     filter_document = {"_id": ObjectId(_id)}
     request_attribute = {"_id": 0, "password": 0}
 
-    data = await collection_repository.find_document_one(filter_document, request_attribute)
+    data = await collection_repository.find_document_one(
+        filter_document, request_attribute
+    )
 
     if not data:
         response = Default_Answer(
@@ -71,7 +72,6 @@ async def read_user(
 
 @router.post("/", response_model=Default_Answer, status_code=status.HTTP_201_CREATED)
 async def create_user(new_user: UserIn):
-
     data_user = new_user.model_dump()
 
     filter_document_username = {"username": data_user["username"]}
@@ -89,7 +89,9 @@ async def create_user(new_user: UserIn):
 
     if does_the_email_exist and does_the_username_exist:
         response = Default_Answer(
-            detail=Attr_Default_Answer(status="fail", msg="username and email already exists")
+            detail=Attr_Default_Answer(
+                status="fail", msg="username and email already exists"
+            )
         ).model_dump()
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=response)
 
@@ -109,7 +111,9 @@ async def create_user(new_user: UserIn):
 
     data = [UserOut(username=data_user["username"], email=data_user["email"])]
 
-    await create_categories(user_id=insert_one_result.inserted_id, username=data_user["username"])
+    await create_categories(
+        user_id=insert_one_result.inserted_id, username=data_user["username"]
+    )
 
     return Default_Answer(
         detail=Attr_Default_Answer(status="success", msg="User created", data=data)
@@ -118,31 +122,88 @@ async def create_user(new_user: UserIn):
 
 @router.delete("/{_id}", response_model=Default_Answer, status_code=status.HTTP_200_OK)
 async def del_document(_id: str):
-
     filter_document = {"_id": ObjectId(_id)}
 
     delete_result = await collection_repository.delete_document(filter_document)
 
     if not delete_result.deleted_count:
         response = Default_Answer(
-            detail=Attr_Default_Answer(status="fail", msg="user not found or does not exist")
+            detail=Attr_Default_Answer(
+                status="fail", msg="user not found or does not exist"
+            )
         ).model_dump()
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=response)
 
-    return Default_Answer(detail=Attr_Default_Answer(status="success", msg="User deleted"))
+    return Default_Answer(
+        detail=Attr_Default_Answer(status="success", msg="User deleted")
+    )
 
 
 @router.put("/{user_id}", status_code=status.HTTP_200_OK, response_model=Default_Answer)
-async def update_document(user_id: str):
-    """
-    TODO
-    Lembrar que antes de eu atualizar lembrar que ele tem que passar pelas validações
-    de username e passwd e email e vrf se já não existe esses dados no DB.
-    """
+async def update_document(user_id: str, data_user_update: Dict):
+    if not ObjectId.is_valid(user_id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=Default_Answer(
+                detail=Attr_Default_Answer(status="Fail", msg="Invalid user ID")
+            ).model_dump(),
+        )
 
     filter_document = {"_id": ObjectId(user_id)}
-    request_attribute = {"username": "Lucas"}
 
+    # Verifica se o usuário existe
+    existing_user = await collection_repository.find_document_one(filter_document)
+    if not existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=Default_Answer(
+                detail=Attr_Default_Answer(status="Fail", msg="User not found")
+            ).model_dump(),
+        )
+
+    # Verifica se o username já está em uso
+    if data_user_update.get("username", False):
+        if await collection_repository.find_document_one(
+            {"username": data_user_update["username"]}
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=Default_Answer(
+                    detail=Attr_Default_Answer(
+                        status="Fail", msg="Username already in use"
+                    )
+                ).model_dump(),
+            )
+
+    # Verifica se o email já está em uso
+    if data_user_update.get("email", False):
+        if await collection_repository.find_document_one(
+            {"email": data_user_update["email"]}
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=Default_Answer(
+                    detail=Attr_Default_Answer(
+                        status="success", msg="Email already in use"
+                    )
+                ).model_dump(),
+            )
+
+    # Atualiza o documento no MongoDB
     update_result = await collection_repository.update_document(
-        filter_document, request_attribute
+        filter_document=filter_document, request_attribute=data_user_update
     )
+
+    if update_result.modified_count == 1:
+        return Default_Answer(
+            detail=Attr_Default_Answer(
+                status="success", msg="User updated successfully"
+            )
+        ).model_dump()
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_304_NOT_MODIFIED,
+            detail=Default_Answer(
+                detail=Attr_Default_Answer(status="success", msg="User not modified")
+            ).model_dump(),
+        )

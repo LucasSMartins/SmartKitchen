@@ -11,7 +11,9 @@ class DBConnectionHandler:
         self.__db_connection = None
 
     def connect_to_db(self, db_name):
-        self.__client = AsyncIOMotorClient(self.__connection_string, server_api=ServerApi("1"))
+        self.__client = AsyncIOMotorClient(
+            self.__connection_string, server_api=ServerApi("1")
+        )
         self.__db_connection = self.__client[db_name]
 
     def get_db_connection(self):

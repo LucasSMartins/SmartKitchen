@@ -23,7 +23,9 @@ async def recipes(recipe_id: str) -> List[Dict]:
     data = (
         collection_repository.find_document({}, {"_id": 0})
         if not recipe_id
-        else collection_repository.find_document({"_id": ObjectId(recipe_id)}, {"_id": 0})
+        else collection_repository.find_document(
+            {"_id": ObjectId(recipe_id)}, {"_id": 0}
+        )
     )
     return data
 

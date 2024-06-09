@@ -22,7 +22,9 @@ collection_repository = CollectionHandler(db_connection, collection)
 async def read_pantry():
     request_attribute = {"_id": 0, "password": 0}
 
-    data = await collection_repository.find_document(request_attribute=request_attribute)
+    data = await collection_repository.find_document(
+        request_attribute=request_attribute
+    )
 
     if not data:
         response = Default_Answer(
@@ -49,7 +51,9 @@ async def read_user(
     filter_document = {"_id": ObjectId(_id)}
     request_attribute = {"_id": 0, "password": 0}
 
-    data = await collection_repository.find_document_one(filter_document, request_attribute)
+    data = await collection_repository.find_document_one(
+        filter_document, request_attribute
+    )
 
     if not data:
         response = Default_Answer(
