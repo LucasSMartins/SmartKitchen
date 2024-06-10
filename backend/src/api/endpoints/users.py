@@ -116,13 +116,25 @@ async def create_user(new_user: UserIn):
 
 @router.delete("/{_id}", response_model=DefaultAnswer, status_code=status.HTTP_200_OK)
 async def del_document(_id: str):
+    # TODO Devo chamar uma fução aqui também que deleta o DB pantry do usuário ?
+
+    if not ObjectId.is_valid(_id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=DefaultAnswer(
+                status=StatusMsg.FAIL, msg="Invalid user ID"
+            ).model_dump(),
+        )
+
     filter_document = {"_id": ObjectId(_id)}
 
     delete_result = await collection_repository.delete_document(filter_document)
 
+    print(_id)
+
     if not delete_result.deleted_count:
         response = DefaultAnswer(
-            status=StatusMsg.FAIL, msg="user not found or does not exist"
+            status=StatusMsg.FAIL, msg="user not found"
         ).model_dump()
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=response)
 
@@ -131,6 +143,8 @@ async def del_document(_id: str):
 
 @router.put("/{user_id}", response_model=DefaultAnswer, status_code=status.HTTP_200_OK)
 async def update_document(user_id: str, data_user_update: UserInUpdate):
+
+    # TODO: Faz sentido esses updates estarem na mesma rota no caso eu deveria criar rotas para cada attr do usuário a ser atualizado.
 
     if not ObjectId.is_valid(user_id):
         raise HTTPException(
@@ -177,7 +191,7 @@ async def update_document(user_id: str, data_user_update: UserInUpdate):
             )
 
     # Removendo os attr com valores None
-    request_attribute = data_user_update.dict(exclude_unset=True)
+    request_attribute = data_user_update.model_dump(exclude_unset=True)
 
     # Atualiza o documento no MongoDB
     update_result = await collection_repository.update_document(
