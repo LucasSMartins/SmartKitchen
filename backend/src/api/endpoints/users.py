@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Path, status
 from models.connection_options.connections import DBConnectionHandler
 from models.repository.collections import CollectionHandler
 from src.api.endpoints.pantry import create_categories
-from src.api.schema.default_answer import Attr_Default_Answer, Default_Answer
+from src.api.schema.default_answer import DefaultAnswer, StatusMsg
 from src.api.schema.users import UserIn, UserInUpdate, UserOut
 
 router = APIRouter()
@@ -21,7 +21,7 @@ db_connection = db_handler.get_db_connection()
 collection_repository = CollectionHandler(db_connection, collection)
 
 
-@router.get("/", response_model=Default_Answer, status_code=status.HTTP_200_OK)
+@router.get("/", response_model=DefaultAnswer, status_code=status.HTTP_200_OK)
 async def read_users():
     request_attribute = {"_id": 0, "password": 0}
 
@@ -30,17 +30,15 @@ async def read_users():
     )
 
     if not data or not data[0]:
-        response = Default_Answer(
-            detail=Attr_Default_Answer(status="fail", msg="Users not found")
+        response = DefaultAnswer(
+            status=StatusMsg.FAIL, msg="Users not found"
         ).model_dump()
         raise HTTPException(status_code=404, detail=response)
 
-    return Default_Answer(
-        detail=Attr_Default_Answer(status="success", msg="Users found", data=data)
-    )
+    return DefaultAnswer(status=StatusMsg.SUCCESS, msg="Users found", data=data)
 
 
-@router.get("/{_id}", response_model=Default_Answer, status_code=status.HTTP_200_OK)
+@router.get("/{_id}", response_model=DefaultAnswer, status_code=status.HTTP_200_OK)
 async def read_user(
     _id: Annotated[
         str,
@@ -60,17 +58,15 @@ async def read_user(
     )
 
     if not data:
-        response = Default_Answer(
-            detail=Attr_Default_Answer(status="fail", msg="User not found")
+        response = DefaultAnswer(
+            status=StatusMsg.FAIL, msg="User not found"
         ).model_dump()
         raise HTTPException(status_code=404, detail=response)
 
-    return Default_Answer(
-        detail=Attr_Default_Answer(status="success", msg="User found", data=data)
-    )
+    return DefaultAnswer(status=StatusMsg.SUCCESS, msg="User found", data=data)
 
 
-@router.post("/", response_model=Default_Answer, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=DefaultAnswer, status_code=status.HTTP_201_CREATED)
 async def create_user(new_user: UserIn):
     data_user = new_user.model_dump()
 
@@ -88,65 +84,59 @@ async def create_user(new_user: UserIn):
     )
 
     if does_the_email_exist and does_the_username_exist:
-        response = Default_Answer(
-            detail=Attr_Default_Answer(
-                status="fail", msg="username and email already exists"
-            )
+        response = DefaultAnswer(
+            status=StatusMsg.FAIL, msg="username and email already exists"
         ).model_dump()
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=response)
 
     if does_the_username_exist:
-        response = Default_Answer(
-            detail=Attr_Default_Answer(status="fail", msg="username already exists")
+        response = DefaultAnswer(
+            status=StatusMsg.FAIL, msg="username already exists"
         ).model_dump()
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=response)
 
     if does_the_email_exist:
-        response = Default_Answer(
-            detail=Attr_Default_Answer(status="fail", msg="This email already exists")
+        response = DefaultAnswer(
+            status=StatusMsg.FAIL, msg="This email already exists"
         ).model_dump()
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=response)
 
     insert_one_result = await collection_repository.insert_document(data_user)
 
-    data = [UserOut(username=data_user["username"], email=data_user["email"])]
+    data = [
+        UserOut(username=data_user["username"], email=data_user["email"]).model_dump()
+    ]
 
     await create_categories(
         user_id=insert_one_result.inserted_id, username=data_user["username"]
     )
 
-    return Default_Answer(
-        detail=Attr_Default_Answer(status="success", msg="User created", data=data)
-    )
+    return DefaultAnswer(status=StatusMsg.SUCCESS, msg="User created", data=data)
 
 
-@router.delete("/{_id}", response_model=Default_Answer, status_code=status.HTTP_200_OK)
+@router.delete("/{_id}", response_model=DefaultAnswer, status_code=status.HTTP_200_OK)
 async def del_document(_id: str):
     filter_document = {"_id": ObjectId(_id)}
 
     delete_result = await collection_repository.delete_document(filter_document)
 
     if not delete_result.deleted_count:
-        response = Default_Answer(
-            detail=Attr_Default_Answer(
-                status="fail", msg="user not found or does not exist"
-            )
+        response = DefaultAnswer(
+            status=StatusMsg.FAIL, msg="user not found or does not exist"
         ).model_dump()
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=response)
 
-    return Default_Answer(
-        detail=Attr_Default_Answer(status="success", msg="User deleted")
-    )
+    return DefaultAnswer(status=StatusMsg.SUCCESS, msg="User deleted")
 
 
-@router.put("/{user_id}", response_model=Default_Answer, status_code=status.HTTP_200_OK)
+@router.put("/{user_id}", response_model=DefaultAnswer, status_code=status.HTTP_200_OK)
 async def update_document(user_id: str, data_user_update: UserInUpdate):
 
     if not ObjectId.is_valid(user_id):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=Default_Answer(
-                detail=Attr_Default_Answer(status="Fail", msg="Invalid user ID")
+            detail=DefaultAnswer(
+                status=StatusMsg.FAIL, msg="Invalid user ID"
             ).model_dump(),
         )
 
@@ -157,8 +147,8 @@ async def update_document(user_id: str, data_user_update: UserInUpdate):
     if not existing_user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=Default_Answer(
-                detail=Attr_Default_Answer(status="Fail", msg="User not found")
+            detail=DefaultAnswer(
+                status=StatusMsg.FAIL, msg="User not found"
             ).model_dump(),
         )
 
@@ -169,10 +159,8 @@ async def update_document(user_id: str, data_user_update: UserInUpdate):
         ):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=Default_Answer(
-                    detail=Attr_Default_Answer(
-                        status="Fail", msg="Username already in use"
-                    )
+                detail=DefaultAnswer(
+                    status=StatusMsg.FAIL, msg="Username already in use"
                 ).model_dump(),
             )
 
@@ -183,10 +171,8 @@ async def update_document(user_id: str, data_user_update: UserInUpdate):
         ):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=Default_Answer(
-                    detail=Attr_Default_Answer(
-                        status="success", msg="Email already in use"
-                    )
+                detail=DefaultAnswer(
+                    status=StatusMsg.FAIL, msg="Email already in use"
                 ).model_dump(),
             )
 
@@ -199,15 +185,13 @@ async def update_document(user_id: str, data_user_update: UserInUpdate):
     )
 
     if update_result.modified_count == 1:
-        return Default_Answer(
-            detail=Attr_Default_Answer(
-                status="success", msg="User updated successfully"
-            )
+        return DefaultAnswer(
+            status=StatusMsg.SUCCESS, msg="User updated successfully"
         ).model_dump()
     else:
         raise HTTPException(
             status_code=status.HTTP_304_NOT_MODIFIED,
-            detail=Default_Answer(
-                detail=Attr_Default_Answer(status="success", msg="User not modified")
+            detail=DefaultAnswer(
+                status=StatusMsg.FAIL, msg="User not modified"
             ).model_dump(),
         )

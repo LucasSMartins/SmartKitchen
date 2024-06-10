@@ -1,7 +1,8 @@
 from fastapi import APIRouter
 
 from src.api.endpoints.pantry import router as pantry_router
-from src.api.endpoints.recipes import router as recipes_router
+
+# from src.api.endpoints.recipes import router as recipes_router
 from src.api.endpoints.users import router as users_router
 
 api_router = APIRouter()

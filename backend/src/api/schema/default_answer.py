@@ -1,16 +1,16 @@
-from typing import Any
+from enum import Enum
+from typing import Dict
 
 from pydantic import BaseModel
 
 
-class Attr_Default_Answer(BaseModel):
-    status: str
+class StatusMsg(str, Enum):
+    SUCCESS = "success"
+    ERROR = "error"
+    FAIL = "fail"
+
+
+class DefaultAnswer(BaseModel):
+    status: StatusMsg
     msg: str
-    data: list[Any] | None = None
-    loc: list[str | int] | None = None
-    type: str | None = None
-
-
-class Default_Answer(BaseModel):
-    detail: Attr_Default_Answer
-    # model_config = ConfigDict(arbitrary_types_allowed=True)
+    data: list[Dict] | None = None

@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Path, status
 
 from models.connection_options.connections import DBConnectionHandler
 from models.repository.collections import CollectionHandler
-from src.api.schema.default_answer import Attr_Default_Answer, Default_Answer
+from src.api.schema.default_answer import DefaultAnswer, StatusMsg
 
 router = APIRouter()
 
@@ -18,7 +18,7 @@ db_connection = db_handler.get_db_connection()
 collection_repository = CollectionHandler(db_connection, collection)
 
 
-@router.get("/", response_model=Default_Answer, status_code=status.HTTP_200_OK)
+@router.get("/", response_model=DefaultAnswer, status_code=status.HTTP_200_OK)
 async def read_pantry():
     request_attribute = {"_id": 0, "password": 0}
 
@@ -27,17 +27,13 @@ async def read_pantry():
     )
 
     if not data:
-        response = Default_Answer(
-            detail=Attr_Default_Answer(status="fail", msg="Pantry not found")
-        ).model_dump()
+        response = DefaultAnswer(status="fail", msg="Pantry not found").model_dump()
         raise HTTPException(status_code=404, detail=response)
 
-    return Default_Answer(
-        detail=Attr_Default_Answer(status="success", msg="Pantry found", data=data)
-    )
+    return DefaultAnswer(status="success", msg="Pantry found", data=data)
 
 
-@router.get("/{_id}", response_model=Default_Answer, status_code=status.HTTP_200_OK)
+@router.get("/{_id}", response_model=DefaultAnswer, status_code=status.HTTP_200_OK)
 async def read_user(
     _id: Annotated[
         str,
@@ -56,14 +52,12 @@ async def read_user(
     )
 
     if not data:
-        response = Default_Answer(
-            detail=Attr_Default_Answer(status="fail", msg="Pantry not found")
+        response = DefaultAnswer(
+            status=StatusMsg.FAIL, msg="Pantry not found"
         ).model_dump()
         raise HTTPException(status_code=404, detail=response)
 
-    return Default_Answer(
-        detail=Attr_Default_Answer(status="success", msg="Pantry found", data=data)
-    )
+    return DefaultAnswer(status=StatusMsg.SUCCESS, msg="Pantry found", data=data)
 
 
 async def create_categories(user_id: ObjectId, username: str):
