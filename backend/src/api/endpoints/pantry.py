@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Path, status
 
 from models.connection_options.connections import DBConnectionHandler
 from models.repository.collections import CollectionHandler
-from src.api.schema.default_answer import Attr_Default_Answer, Default_Answer
+from src.api.schema.default_answer import DefaultAnswer, StatusMsg
 
 router = APIRouter()
 
@@ -18,24 +18,22 @@ db_connection = db_handler.get_db_connection()
 collection_repository = CollectionHandler(db_connection, collection)
 
 
-@router.get("/", response_model=Default_Answer, status_code=status.HTTP_200_OK)
+@router.get("/", response_model=DefaultAnswer, status_code=status.HTTP_200_OK)
 async def read_pantry():
     request_attribute = {"_id": 0, "password": 0}
 
-    data = await collection_repository.find_document(request_attribute=request_attribute)
-
-    if not data:
-        response = Default_Answer(
-            detail=Attr_Default_Answer(status="fail", msg="Pantry not found")
-        ).model_dump()
-        raise HTTPException(status_code=404, detail=response)
-
-    return Default_Answer(
-        detail=Attr_Default_Answer(status="success", msg="Pantry found", data=data)
+    data = await collection_repository.find_document(
+        request_attribute=request_attribute
     )
 
+    if not data:
+        response = DefaultAnswer(status="fail", msg="Pantry not found").model_dump()
+        raise HTTPException(status_code=404, detail=response)
 
-@router.get("/{_id}", response_model=Default_Answer, status_code=status.HTTP_200_OK)
+    return DefaultAnswer(status="success", msg="Pantry found", data=data)
+
+
+@router.get("/{_id}", response_model=DefaultAnswer, status_code=status.HTTP_200_OK)
 async def read_user(
     _id: Annotated[
         str,
@@ -49,24 +47,23 @@ async def read_user(
     filter_document = {"_id": ObjectId(_id)}
     request_attribute = {"_id": 0, "password": 0}
 
-    data = await collection_repository.find_document_one(filter_document, request_attribute)
+    data = await collection_repository.find_document_one(
+        filter_document, request_attribute
+    )
 
     if not data:
-        response = Default_Answer(
-            detail=Attr_Default_Answer(status="fail", msg="Pantry not found")
+        response = DefaultAnswer(
+            status=StatusMsg.FAIL, msg="Pantry not found"
         ).model_dump()
         raise HTTPException(status_code=404, detail=response)
 
-    return Default_Answer(
-        detail=Attr_Default_Answer(status="success", msg="Pantry found", data=data)
-    )
+    return DefaultAnswer(status=StatusMsg.SUCCESS, msg="Pantry found", data=data)
 
 
 async def create_categories(user_id: ObjectId, username: str):
     """
     TODO
-    Oque é melhor nessa situação, receber um modelo do banco, depois fazer um update ou enviar esses dados abaixo
-    mesmo fazendo apenas um insert??
+    Oque é melhor nessa situação, receber um modelo do banco, depois fazer um update ou enviar esses dados abaixo mesmo fazendo apenas um insert??
     """
 
     pantry_model = {

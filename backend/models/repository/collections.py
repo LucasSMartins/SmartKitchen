@@ -35,10 +35,13 @@ class CollectionHandler:
     #         self.__collection_name)
     #     collection.insert_many(listDocument)
 
-    async def update_document(self, filter_document: Dict, request_attribute: Dict) -> UpdateResult:
-        collection = self.__db_connection.get_collection(
-            self.__collection_name)
-        update_result: UpdateResult = await collection.update_one(filter_document, {"$set": request_attribute})
+    async def update_document(
+        self, filter_document: Dict, request_attribute: Dict
+    ) -> UpdateResult:
+        collection = self.__db_connection.get_collection(self.__collection_name)
+        update_result: UpdateResult = await collection.update_one(
+            filter_document, {"$set": request_attribute}
+        )
         return update_result
 
     def delete_document(self, _id: Dict):
@@ -51,5 +54,3 @@ class CollectionHandler:
     #     collection = self.__db_connection.get_collection(
     #         self.__collection_name)
     #     collection.delete_many({"_id": {"$in": object_ids}})
-
-
