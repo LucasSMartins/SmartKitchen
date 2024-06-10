@@ -7,7 +7,7 @@ from models.connection_options.connections import DBConnectionHandler
 from models.repository.collections import CollectionHandler
 from src.api.endpoints.pantry import create_categories
 from src.api.schema.default_answer import Attr_Default_Answer, Default_Answer
-from src.api.schema.users import UserOut, UserIn, UserInUpdate
+from src.api.schema.users import UserIn, UserInUpdate, UserOut
 
 router = APIRouter()
 
@@ -21,7 +21,7 @@ db_connection = db_handler.get_db_connection()
 collection_repository = CollectionHandler(db_connection, collection)
 
 
-@router.get("/", response_model=Default_Answer)
+@router.get("/", response_model=Default_Answer, status_code=status.HTTP_200_OK)
 async def read_users():
     request_attribute = {"_id": 0, "password": 0}
 
@@ -42,15 +42,15 @@ async def read_users():
 
 @router.get("/{_id}", response_model=Default_Answer, status_code=status.HTTP_200_OK)
 async def read_user(
-        _id: Annotated[
-            str,
-            Path(
-                title="The ID of the item to get",
-                description="The unique identifier for the item, represented as a MongoDB "
-                            "ObjectId",
-                regex=r"^[a-fA-F0-9]{24}$",
-            ),
-        ]
+    _id: Annotated[
+        str,
+        Path(
+            title="The ID of the item to get",
+            description="The unique identifier for the item, represented as a MongoDB"
+            "ObjectId",
+            regex=r"^[a-fA-F0-9]{24}$",
+        ),
+    ]
 ):
     filter_document = {"_id": ObjectId(_id)}
     request_attribute = {"_id": 0, "password": 0}
@@ -139,7 +139,7 @@ async def del_document(_id: str):
     )
 
 
-@router.put("/{user_id}", status_code=status.HTTP_200_OK, response_model=Default_Answer)
+@router.put("/{user_id}", response_model=Default_Answer, status_code=status.HTTP_200_OK)
 async def update_document(user_id: str, data_user_update: UserInUpdate):
 
     if not ObjectId.is_valid(user_id):
@@ -165,7 +165,7 @@ async def update_document(user_id: str, data_user_update: UserInUpdate):
     # Verifica se o username já está em uso
     if data_user_update.username:
         if await collection_repository.find_document_one(
-                {"username": data_user_update.username}
+            {"username": data_user_update.username}
         ):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -179,19 +179,19 @@ async def update_document(user_id: str, data_user_update: UserInUpdate):
     # Verifica se o email já está em uso
     if data_user_update.email:
         if await collection_repository.find_document_one(
-                {"email": data_user_update.email}
+            {"email": data_user_update.email}
         ):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=Default_Answer(
                     detail=Attr_Default_Answer(
-                        status="success", msg='Email already in use'
+                        status="success", msg="Email already in use"
                     )
                 ).model_dump(),
             )
 
     # Removendo os attr com valores None
-    request_attribute =  data_user_update.dict(exclude_unset=True)
+    request_attribute = data_user_update.dict(exclude_unset=True)
 
     # Atualiza o documento no MongoDB
     update_result = await collection_repository.update_document(
@@ -201,7 +201,7 @@ async def update_document(user_id: str, data_user_update: UserInUpdate):
     if update_result.modified_count == 1:
         return Default_Answer(
             detail=Attr_Default_Answer(
-                status="success", msg='User updated successfully'
+                status="success", msg="User updated successfully"
             )
         ).model_dump()
     else:

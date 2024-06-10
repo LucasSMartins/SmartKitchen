@@ -18,7 +18,7 @@ db_connection = db_handler.get_db_connection()
 collection_repository = CollectionHandler(db_connection, collection)
 
 
-@router.get("/", status_code=status.HTTP_200_OK, response_model=Default_Answer)
+@router.get("/", response_model=Default_Answer, status_code=status.HTTP_200_OK)
 async def read_pantry():
     request_attribute = {"_id": 0, "password": 0}
 
@@ -69,8 +69,7 @@ async def read_user(
 async def create_categories(user_id: ObjectId, username: str):
     """
     TODO
-    Oque é melhor nessa situação, receber um modelo do banco, depois fazer um update ou enviar esses dados abaixo
-    mesmo fazendo apenas um insert??
+    Oque é melhor nessa situação, receber um modelo do banco, depois fazer um update ou enviar esses dados abaixo mesmo fazendo apenas um insert??
     """
 
     pantry_model = {

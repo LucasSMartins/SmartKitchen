@@ -1,6 +1,6 @@
-from bson.objectid import ObjectId
 from typing import Dict, List
 
+from bson.objectid import ObjectId
 from fastapi import APIRouter, HTTPException
 
 from models.connection_options.connections import DBConnectionHandler
