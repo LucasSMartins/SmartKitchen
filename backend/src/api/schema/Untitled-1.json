@@ -1,0 +1,16 @@
+{
+  "_id":{"$oid":"66684ee433a011c11bff959f"},
+      "user_id":{"$oid":"66684ee433a011c11bff959e"},
+      "username":"Lucas_Martins",
+      "pantry":[
+                  {"category_name":"Grains and Cereals","items":[]},{"category_name":"Fruits and vegetables","items":[]},{"category_name":"Meat and Fish","items":[]},{"category_name":"Dairy and Eggs","items":[]},{"category_name":"Breads and Bakery Products","items":[]},{"category_name":"","items":[]},
+                  {"category_name":"Frozen","items":[]},
+                  {"category_name":"Pasta and Wheat Products","items":[]},{"category_name":"Canned goods and preserves","items":[]},
+                  {"category_name":"Drinks","items":[]},
+                  {"category_name":"Grocery Products","items":[]},{"category_name":"Candy","items":[]},
+                  {"category_name":"Condiments and Sauces","items":[]},
+                  {"category_name":"Cleaning materials","items":[]},
+                  {"category_name":"Personal hygiene","items":[]},{"category_name":"Laundry","items":[]}
+              ]
+          
+}
