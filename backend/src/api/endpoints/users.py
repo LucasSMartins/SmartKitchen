@@ -4,21 +4,23 @@ from bson.objectid import ObjectId
 from fastapi import APIRouter, HTTPException, Path, status
 
 from models.connection_options.connections import DBConnectionHandler
+from models.connection_options.mongo_db_config import mongo_db_infos
 from models.repository.collections import CollectionHandler
-from src.api.endpoints.pantry import create_categories
+from src.api.endpoints.pantry import create_categories, update_username_pantry
 from src.api.schema.default_answer import DefaultAnswer, StatusMsg
 from src.api.schema.users import UserIn, UserInUpdate, UserOut
 
 router = APIRouter()
 
-db_name = "smartkitchien"
 collection = "users"
 
 db_handler = DBConnectionHandler()
-db_handler.connect_to_db(db_name)
+db_handler.connect_to_db(mongo_db_infos["DB_NAME"])
 db_connection = db_handler.get_db_connection()
 
-collection_repository = CollectionHandler(db_connection, collection)
+collection_repository = CollectionHandler(
+    db_connection, mongo_db_infos["COLLECTIOS"]["collection_users"]  # type: ignore
+)
 
 
 @router.get("/", response_model=DefaultAnswer, status_code=status.HTTP_200_OK)
@@ -29,7 +31,7 @@ async def read_users():
         request_attribute=request_attribute
     )
 
-    if not data or not data[0]:
+    if not data:
         response = DefaultAnswer(
             status=StatusMsg.FAIL, msg="Users not found"
         ).model_dump()
@@ -50,6 +52,14 @@ async def read_user(
         ),
     ]
 ):
+    if not ObjectId.is_valid(_id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=DefaultAnswer(
+                status=StatusMsg.FAIL, msg="Invalid user ID"
+            ).model_dump(),
+        )
+
     filter_document = {"_id": ObjectId(_id)}
     request_attribute = {"_id": 0, "password": 0}
 
@@ -146,6 +156,8 @@ async def update_document(user_id: str, data_user_update: UserInUpdate):
 
     # TODO: Faz sentido esses updates estarem na mesma rota no caso eu deveria criar rotas para cada attr do usuário a ser atualizado.
 
+    # TODO: Precisa criar o método de atualizar o user name da collection pantry também
+
     if not ObjectId.is_valid(user_id):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -191,14 +203,24 @@ async def update_document(user_id: str, data_user_update: UserInUpdate):
             )
 
     # Removendo os attr com valores None
-    request_attribute = data_user_update.model_dump(exclude_unset=True)
+    request_attribute = {"$set": data_user_update.model_dump(exclude_unset=True)}
 
     # Atualiza o documento no MongoDB
     update_result = await collection_repository.update_document(
         filter_document=filter_document, request_attribute=request_attribute
     )
 
+
+
     if update_result.modified_count == 1:
+
+        # TODO
+        # Após atualizado o usuário, no caso do username ele atualiza na collection
+        # pantry. Nesse caso ele vai atualizar mesmo que nome se a que ele
+        # já em lá logo preciso mudar essa func de lugar
+        if data_user_update.username:
+            await update_username_pantry(user_id, data_user_update.username)
+
         return DefaultAnswer(
             status=StatusMsg.SUCCESS, msg="User updated successfully"
         ).model_dump()
