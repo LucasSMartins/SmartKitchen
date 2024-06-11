@@ -40,7 +40,7 @@ class CollectionHandler:
     ) -> UpdateResult:
         collection = self.__db_connection.get_collection(self.__collection_name)
         update_result: UpdateResult = await collection.update_one(
-            filter_document, {"$set": request_attribute}
+            filter_document, request_attribute
         )
         return update_result
 
