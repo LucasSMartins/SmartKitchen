@@ -1,12 +1,16 @@
 from enum import Enum
+from typing import Any
 
+from bson import ObjectId
 from pydantic import BaseModel
 
 
-class Units(Enum):
+class Units(str, Enum):
     UNITS = "un"
     LITERS = "L"
-    KILO_GRAMA = "kg"
+    MILLILITER = "ml"
+    GRAMS = "g"
+    KILO_GRAMS = "kg"
 
 
 class Items(BaseModel):
@@ -15,17 +19,12 @@ class Items(BaseModel):
     unit: Units
 
 
-class Subcategories(BaseModel):
-    id: str
-    category_name: str
-    items: list[Items | None]
-
-
 class Categories(BaseModel):
-    categories: list[Subcategories]
+    category_name: str
+    items: list[Items] = []
 
 
 class Pantry(BaseModel):
     user_id: str
     username: str
-    pantry: Categories
+    pantry: list[Categories]
