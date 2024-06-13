@@ -19,7 +19,7 @@ db_handler.connect_to_db(mongo_db_infos["DB_NAME"])
 db_connection = db_handler.get_db_connection()
 
 collection_repository = CollectionHandler(
-    db_connection, mongo_db_infos["COLLECTIOS"]["collection_users"]  # type: ignore
+    db_connection, mongo_db_infos["COLLECTIONS"]["collection_users"]  # type: ignore
 )
 
 
@@ -126,7 +126,7 @@ async def create_user(new_user: UserIn):
 
 @router.delete("/{_id}", response_model=DefaultAnswer, status_code=status.HTTP_200_OK)
 async def del_document(_id: str):
-    # TODO Devo chamar uma fução aqui também que deleta o DB pantry do usuário ?
+    # TODO Devo chamar uma função aqui também que deleta o DB pantry do usuário porque e se ele quiser voltar a usar o App?
 
     if not ObjectId.is_valid(_id):
         raise HTTPException(
@@ -210,14 +210,9 @@ async def update_document(user_id: str, data_user_update: UserInUpdate):
         filter_document=filter_document, request_attribute=request_attribute
     )
 
-
-
     if update_result.modified_count == 1:
 
-        # TODO
-        # Após atualizado o usuário, no caso do username ele atualiza na collection
-        # pantry. Nesse caso ele vai atualizar mesmo que nome se a que ele
-        # já em lá logo preciso mudar essa func de lugar
+        # TODO: Após atualizado o usuário, no caso do username ele atualiza na collection pantry. Nesse caso ele vai atualizar mesmo que nome se a que ele já em lá logo preciso mudar essa func de lugar.
         if data_user_update.username:
             await update_username_pantry(user_id, data_user_update.username)
 

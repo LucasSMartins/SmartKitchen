@@ -18,7 +18,7 @@ db_handler = DBConnectionHandler()
 db_handler.connect_to_db(mongo_db_infos["DB_NAME"])
 db_connection = db_handler.get_db_connection()
 collection_repository = CollectionHandler(
-    db_connection, mongo_db_infos["COLLECTIOS"]["collection_pantry"]  # type: ignore
+    db_connection, mongo_db_infos["COLLECTIONS"]["collection_pantry"]  # type: ignore
 )
 
 
@@ -125,13 +125,6 @@ async def update_username_pantry(user_id: str, username: str):
     await collection_repository.update_document(filter_document, request_attribute)
 
 
-#
-#
-# +++++++++++++++++++++++  POST +++++++++++++++++++++++++++
-#
-#
-
-
 @router.post(
     "/{user_id}", response_model=DefaultAnswer, status_code=status.HTTP_201_CREATED
 )
@@ -153,7 +146,7 @@ async def create_items(user_id: str, category_name: str, data_items: Items):
     #  $push ->> Adiciona um novo item a uma lista mesmo que tenha um exatamente igual.
     # request_attribute = {"$push": {"pantry.$.items": data_items.model_dump()}}
 
-    #  $addToSet ->> Adiciona um novo item a lista mas se hopuver um exatamente igual ele não adiciona mas retorna um 200.
+    #  $addToSet ->> Adiciona um novo item a lista mas se houver um exatamente igual ele não adiciona mas retorna um 200.
     request_attribute = {"$addToSet": {"pantry.$.items": data_items.model_dump()}}
 
     update_result = await collection_repository.update_document(
