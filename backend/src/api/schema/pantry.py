@@ -1,8 +1,11 @@
 from enum import Enum
-from typing import Any
+from typing import Annotated, Optional
+from uuid import UUID, uuid4
 
 from bson import ObjectId
-from pydantic import BaseModel
+from bson.objectid import ObjectId as BsonObjectId
+from pydantic import BaseModel, BeforeValidator, Field, field_validator
+from pydantic_mongo import AbstractRepository, PydanticObjectId
 
 
 class Units(str, Enum):
@@ -13,7 +16,15 @@ class Units(str, Enum):
     KILO_GRAMS = "kg"
 
 
-class Items(BaseModel):
+class ItemsOut(BaseModel):
+    # PydanticObjectId is an alias to Annotated[ObjectId, ObjectIdAnnotation]
+    item_id: PydanticObjectId
+    item_name: str
+    quantity: int
+    unit: Units
+
+
+class ItemsIn(BaseModel):
     item_name: str
     quantity: int
     unit: Units
@@ -21,10 +32,10 @@ class Items(BaseModel):
 
 class Categories(BaseModel):
     category_name: str
-    items: list[Items] = []
+    items: list[ItemsOut] = []
 
 
 class Pantry(BaseModel):
-    user_id: str
+    user_id: PydanticObjectId
     username: str
     pantry: list[Categories]

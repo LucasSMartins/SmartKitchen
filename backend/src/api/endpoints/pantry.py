@@ -1,15 +1,14 @@
-import pprint
+from turtle import up
 from typing import Annotated
 
 from bson import ObjectId
 from fastapi import APIRouter, HTTPException, Path, status
-from httpx import request
 
 from models.connection_options.connections import DBConnectionHandler
 from models.connection_options.mongo_db_config import mongo_db_infos
 from models.repository.collections import CollectionHandler
 from src.api.schema.default_answer import DefaultAnswer, StatusMsg
-from src.api.schema.pantry import Items
+from src.api.schema.pantry import ItemsIn, ItemsOut
 
 router = APIRouter()
 
@@ -45,7 +44,7 @@ async def read_pantry():
     return DefaultAnswer(status="success", msg="Pantry found", data=data)
 
 
-@router.get("/{user_id}", status_code=status.HTTP_200_OK)
+@router.get("/{user_id}", response_model=DefaultAnswer, status_code=status.HTTP_200_OK)
 async def read_user(
     user_id: Annotated[
         str,
@@ -85,10 +84,115 @@ async def read_user(
     return DefaultAnswer(status=StatusMsg.SUCCESS, msg="Pantry found", data=data)
 
 
+@router.post(
+    "/{user_id}", response_model=DefaultAnswer, status_code=status.HTTP_201_CREATED
+)
+async def create_items(user_id: str, category_name: str, data_items: ItemsIn):
+
+    # VRF se o user_id é válido como ObjectID.
+    if not ObjectId.is_valid(user_id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=DefaultAnswer(
+                status=StatusMsg.FAIL, msg="Invalid user ID"
+            ).model_dump(),
+        )
+
+    filter_document = {
+        "user_id": ObjectId(user_id),
+        "pantry.category_name": category_name,
+    }
+
+    result_find = await collection_repository.find_document_one(
+        filter_document={"user_id": ObjectId(user_id)},
+        request_attribute={"_id": 0, "password": 0},
+    )
+
+    if not result_find:
+        raise HTTPException(
+            status_code=404,
+            detail=DefaultAnswer(
+                status=StatusMsg.FAIL, msg="Pantry not found"
+            ).model_dump(),
+        )
+
+    # TODO Qual situação é a melhor para esse caso.
+
+    #  $push ->> Adiciona um novo item a uma lista mesmo que tenha um exatamente igual.
+    # request_attribute = {"$push": {"pantry.$.items": data_items.model_dump()}}
+
+    #  $addToSet ->> Adiciona um novo item a lista mas se houver um exatamente igual ele não adiciona mas retorna um 200.
+    # request_attribute = {"$addToSet": {"pantry.$.items": data_items.model_dump()}}
+
+    item_id = ObjectId()
+    data = ItemsOut(item_id=item_id, **data_items.model_dump())
+
+    request_attribute = {"$addToSet": {"pantry.$.items": data.model_dump()}}
+
+    update_result = await collection_repository.update_document(
+        filter_document, request_attribute
+    )
+
+    if update_result.matched_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=DefaultAnswer(
+                status=StatusMsg.FAIL, msg="User or category not found"
+            ).model_dump(),
+        )
+
+    return DefaultAnswer(
+        status=StatusMsg.SUCCESS, msg="The item was successfully added"
+    ).model_dump()
+
+
+@router.delete(
+    "/{item_id}", response_model=DefaultAnswer, status_code=status.HTTP_200_OK
+)
+async def delete_item(user_id: str, item_id: str, category_name: str):
+
+    # TODO: Faz sentido receber o category_name pela url? ou devo receber pela query mesmo.
+
+    if not ObjectId.is_valid(item_id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=DefaultAnswer(
+                status=StatusMsg.FAIL, msg="Invalid user ID"
+            ).model_dump(),
+        )
+
+    filter_document = {
+        "user_id": user_id,
+        "pantry.category_name": category_name,
+        "pantry.items.item_id": item_id,
+    }
+
+    request_attribute = {"$pull": {"pantry.$[category].items": {"item_id": item_id}}}
+
+    array_filters = [{"category.category_name": category_name}]
+
+    # Atualiza o documento removendo o item com o item_id especificado
+    update_result = await collection_repository.update_document(
+        filter_document, request_attribute, array_filters
+    )
+
+    if update_result.modified_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=DefaultAnswer(
+                status=StatusMsg.FAIL, msg="No items were found"
+            ).model_dump(),
+        )
+
+    return DefaultAnswer(status=StatusMsg.SUCCESS, msg="Item deleted successfully")
+
+
+# TODO criar o put dos attr dos items
+
+
 async def create_categories(user_id: ObjectId, username: str):
     """
-    TODO
-    Oque é melhor nessa situação, receber um modelo do banco, depois fazer um update ou enviar esses dados abaixo mesmo fazendo apenas um insert??
+    TODO Oque é melhor nessa situação, receber um modelo do banco, depois fazer um update ou enviar esses dados abaixo mesmo fazendo apenas um insert??
     """
 
     pantry_model = {
@@ -123,44 +227,3 @@ async def update_username_pantry(user_id: str, username: str):
     request_attribute = {"$set": {"username": username}}
 
     await collection_repository.update_document(filter_document, request_attribute)
-
-
-@router.post(
-    "/{user_id}", response_model=DefaultAnswer, status_code=status.HTTP_201_CREATED
-)
-async def create_items(user_id: str, category_name: str, data_items: Items):
-
-    if not ObjectId.is_valid(user_id):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=DefaultAnswer(
-                status=StatusMsg.FAIL, msg="Invalid user ID"
-            ).model_dump(),
-        )
-
-    filter_document = {
-        "user_id": ObjectId(user_id),
-        "pantry.category_name": category_name,
-    }
-
-    #  $push ->> Adiciona um novo item a uma lista mesmo que tenha um exatamente igual.
-    # request_attribute = {"$push": {"pantry.$.items": data_items.model_dump()}}
-
-    #  $addToSet ->> Adiciona um novo item a lista mas se houver um exatamente igual ele não adiciona mas retorna um 200.
-    request_attribute = {"$addToSet": {"pantry.$.items": data_items.model_dump()}}
-
-    update_result = await collection_repository.update_document(
-        filter_document, request_attribute
-    )
-
-    if update_result.matched_count == 0:
-        raise HTTPException(
-            status_code=404,
-            detail=DefaultAnswer(
-                status=StatusMsg.FAIL, msg="User or category not found"
-            ),
-        )
-
-    return DefaultAnswer(
-        status=StatusMsg.SUCCESS, msg="The item was successfully added"
-    )

@@ -36,11 +36,12 @@ class CollectionHandler:
     #     collection.insert_many(listDocument)
 
     async def update_document(
-        self, filter_document: Dict, request_attribute: Dict
+        self, filter_document: Dict, request_attribute: Dict, **kwargs
     ) -> UpdateResult:
+        array_filters = kwargs.get("array_filters", [])
         collection = self.__db_connection.get_collection(self.__collection_name)
         update_result: UpdateResult = await collection.update_one(
-            filter_document, request_attribute
+            filter_document, request_attribute, array_filters=array_filters
         )
         return update_result
 
