@@ -1,4 +1,3 @@
-from turtle import up
 from typing import Annotated
 
 from bson import ObjectId
@@ -21,6 +20,40 @@ collection_repository = CollectionHandler(
 )
 
 
+"""
+    TODO
+    =================ROTAS A SEREM CRIADAS================
+
+    [ X ]  Obter todas as categorias da despensa: 
+           GET /users/{user_id}/pantry
+           Retorna todas as categorias e seus itens da despensa de um usuário específico.
+
+        
+    [ X ] Obter todos os itens de uma categoria específica:
+        GET /users/{user_id}/pantry/{category_name}/items           
+        Retorna todos os itens dentro de uma categoria específica para um   usuário.
+
+        
+    [ X ] Adicionar um novo item a uma categoria:
+          POST /users/{user_id}/pantry/{category_name}/items
+          Adiciona um novo item à categoria especificada para um usuário.
+
+        
+          XXXXXXXXXXXXXXX ESSA ROTA FAZ SENTIDO EM MEU PROJETO ?? XXXXXXXXXXX
+    [ ] Obter um item específico de uma categoria:
+        GET /users/{user_id}/pantry/{category_name}/items/{item_name}
+        Retorna os detalhes de um item específico dentro de uma categoria para um usuário.
+
+    
+    [ X ] Atualizar um item específico de uma categoria:
+        PUT /users/{user_id}/pantry/{category_name}/items/{item_name}
+        Atualiza os detalhes de um item específico dentro de uma categoria para um usuário
+
+    ------------------------------------------------------
+"""
+
+
+# TODO: Obtém a despensa de todos os usuários, não sei se faz sentido ter essa rota.
 @router.get("/", response_model=DefaultAnswer, status_code=status.HTTP_200_OK)
 async def read_pantry():
 
@@ -44,8 +77,9 @@ async def read_pantry():
     return DefaultAnswer(status="success", msg="Pantry found", data=data)
 
 
+# Obter todas as categorias da despensa:
 @router.get("/{user_id}", response_model=DefaultAnswer, status_code=status.HTTP_200_OK)
-async def read_user(
+async def read_user_pantry(
     user_id: Annotated[
         str,
         Path(
@@ -84,6 +118,55 @@ async def read_user(
     return DefaultAnswer(status=StatusMsg.SUCCESS, msg="Pantry found", data=data)
 
 
+# Obter todos os itens de uma categoria específica:
+@router.get("/category/{user_id}")
+async def all_items_specific_category(user_id: str, category_name: str):
+
+    if not ObjectId.is_valid(user_id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=DefaultAnswer(
+                status=StatusMsg.FAIL, msg="Invalid user ID"
+            ).model_dump(),
+        )
+
+    filter_document = {
+        "user_id": ObjectId(user_id),
+        "pantry.category_name": category_name,
+    }
+
+    request_attribute = {"_id": 0, "pantry.$": 1}
+
+    # Verifica se o usuário existe
+    existing_user = await collection_repository.find_document_one(
+        {"user_id": ObjectId(user_id)}
+    )
+    if not existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=DefaultAnswer(
+                status=StatusMsg.FAIL, msg="User not found"
+            ).model_dump(),
+        )
+
+    result_find = await collection_repository.find_document_one(
+        filter_document, request_attribute
+    )
+
+    if not result_find:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=DefaultAnswer(
+                status=StatusMsg.FAIL, msg="Category not found"
+            ).model_dump(),
+        )
+
+    return DefaultAnswer(
+        status=StatusMsg.SUCCESS, msg="Pantry Items Found", data=result_find
+    )
+
+
+# Adicionar um novo item a uma categoria:
 @router.post(
     "/{user_id}", response_model=DefaultAnswer, status_code=status.HTTP_201_CREATED
 )
@@ -146,6 +229,7 @@ async def create_items(user_id: str, category_name: str, data_items: ItemsIn):
     ).model_dump()
 
 
+# Atualizar um item específico de uma categoria
 @router.delete(
     "/{item_id}", response_model=DefaultAnswer, status_code=status.HTTP_200_OK
 )
@@ -185,9 +269,6 @@ async def delete_item(user_id: str, item_id: str, category_name: str):
         )
 
     return DefaultAnswer(status=StatusMsg.SUCCESS, msg="Item deleted successfully")
-
-
-# TODO criar o put dos attr dos items
 
 
 async def create_categories(user_id: ObjectId, username: str):

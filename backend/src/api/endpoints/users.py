@@ -140,8 +140,6 @@ async def del_document(_id: str):
 
     delete_result = await collection_repository.delete_document(filter_document)
 
-    print(_id)
-
     if not delete_result.deleted_count:
         response = DefaultAnswer(
             status=StatusMsg.FAIL, msg="user not found"
