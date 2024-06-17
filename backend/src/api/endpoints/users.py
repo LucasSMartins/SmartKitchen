@@ -152,6 +152,8 @@ async def del_document(_id: str):
 @router.put("/{user_id}", response_model=DefaultAnswer, status_code=status.HTTP_200_OK)
 async def update_document(user_id: str, data_user_update: UserInUpdate):
 
+    # TODO: Se você passar um usuário inexistente, ele tenta validar primeiro a os campos de usuário e senha para depois tentar ver se o usuário existe
+
     # TODO: Faz sentido esses updates estarem na mesma rota no caso eu deveria criar rotas para cada attr do usuário a ser atualizado.
 
     # TODO: Precisa criar o método de atualizar o user name da collection pantry também
