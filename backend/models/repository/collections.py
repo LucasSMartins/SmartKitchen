@@ -36,9 +36,11 @@ class CollectionHandler:
     #     collection.insert_many(listDocument)
 
     async def update_document(
-        self, filter_document: Dict, request_attribute: Dict, **kwargs
+        self,
+        filter_document: Dict,
+        request_attribute: Dict,
+        array_filters: list[Dict] = None,
     ) -> UpdateResult:
-        array_filters = kwargs.get("array_filters", [])
         collection = self.__db_connection.get_collection(self.__collection_name)
         update_result: UpdateResult = await collection.update_one(
             filter_document, request_attribute, array_filters=array_filters
@@ -49,6 +51,10 @@ class CollectionHandler:
         collection = self.__db_connection.get_collection(self.__collection_name)
         delete_result = collection.delete_one(_id)
         return delete_result
+
+    def delete_many(self):
+        collection = self.__db_connection.get_collection(self.__collection_name)
+        collection.delete_many({})
 
     # def delete_many_document(self, userId: List) -> None:
     #     object_ids = [ObjectId(i) for i in userId]

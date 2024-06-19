@@ -7,5 +7,7 @@ mongo_db_infos = {
         "collection_users": "users",
         "collection_pantry": "pantry",
         "collection_recipes": "recipes",
+        "collection_shopping_cart": "shopping_cart",
+        "collection_cookbook": "cookbook",
     },
 }

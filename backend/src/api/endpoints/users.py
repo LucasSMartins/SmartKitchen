@@ -7,6 +7,10 @@ from models.connection_options.connections import DBConnectionHandler
 from models.connection_options.mongo_db_config import mongo_db_infos
 from models.repository.collections import CollectionHandler
 from src.api.endpoints.pantry import create_categories, update_username_pantry
+from src.api.endpoints.shopping_cart import (
+    create_shopping_cart,
+    update_username_shopping_cart,
+)
 from src.api.schema.default_answer import DefaultAnswer, StatusMsg
 from src.api.schema.users import UserIn, UserInUpdate, UserOut
 
@@ -40,9 +44,9 @@ async def read_users():
     return DefaultAnswer(status=StatusMsg.SUCCESS, msg="Users found", data=data)
 
 
-@router.get("/{_id}", response_model=DefaultAnswer, status_code=status.HTTP_200_OK)
+@router.get("/{user_id}", response_model=DefaultAnswer, status_code=status.HTTP_200_OK)
 async def read_user(
-    _id: Annotated[
+    user_id: Annotated[
         str,
         Path(
             title="The ID of the item to get",
@@ -52,7 +56,7 @@ async def read_user(
         ),
     ]
 ):
-    if not ObjectId.is_valid(_id):
+    if not ObjectId.is_valid(user_id):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=DefaultAnswer(
@@ -60,7 +64,7 @@ async def read_user(
             ).model_dump(),
         )
 
-    filter_document = {"_id": ObjectId(_id)}
+    filter_document = {"_id": ObjectId(user_id)}
     request_attribute = {"_id": 0, "password": 0}
 
     data = await collection_repository.find_document_one(
@@ -68,10 +72,12 @@ async def read_user(
     )
 
     if not data:
-        response = DefaultAnswer(
-            status=StatusMsg.FAIL, msg="User not found"
-        ).model_dump()
-        raise HTTPException(status_code=404, detail=response)
+        raise HTTPException(
+            status_code=404,
+            detail=DefaultAnswer(
+                status=StatusMsg.FAIL, msg="User not found"
+            ).model_dump(),
+        )
 
     return DefaultAnswer(status=StatusMsg.SUCCESS, msg="User found", data=data)
 
@@ -117,7 +123,12 @@ async def create_user(new_user: UserIn):
         UserOut(username=data_user["username"], email=data_user["email"]).model_dump()
     ]
 
+    # TODO: As criações de categorias e carrinho de compras precisão ser somente chamadas se o usuário for criado ? precisa haver algum tipo de validação para elas serem chamadas ?
     await create_categories(
+        user_id=insert_one_result.inserted_id, username=data_user["username"]
+    )
+
+    await create_shopping_cart(
         user_id=insert_one_result.inserted_id, username=data_user["username"]
     )
 
@@ -215,6 +226,7 @@ async def update_document(user_id: str, data_user_update: UserInUpdate):
         # TODO: Após atualizado o usuário, no caso do username ele atualiza na collection pantry. Nesse caso ele vai atualizar mesmo que nome se a que ele já em lá logo preciso mudar essa func de lugar.
         if data_user_update.username:
             await update_username_pantry(user_id, data_user_update.username)
+            await update_username_shopping_cart(user_id, data_user_update.username)
 
         return DefaultAnswer(
             status=StatusMsg.SUCCESS, msg="User updated successfully"
@@ -226,3 +238,7 @@ async def update_document(user_id: str, data_user_update: UserInUpdate):
                 status=StatusMsg.FAIL, msg="User not modified"
             ).model_dump(),
         )
+
+
+async def delete_all_users():
+    collection_repository.delete_many()
